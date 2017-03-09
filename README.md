@@ -10,13 +10,13 @@ g10k is r10k with steroids that can be downloaded here: [g10k](https://github.co
     - python-jinja2
     - /opt/puppetlabs/puppet/bin/g10k: https://github.com/xorpaul/g10k/
     - /opt/puppetlabs/g10k/cache (owned by puppet)
-    - /var/log/g10k.log (owned by puppet. Do not forget logrotate)
-    - puppet server 4.x (it runs under /etc/puppetlabs/code/)
+    - /var/log/g10k.log (owned by puppet. Do not forget a logrotate)
+    - puppet server 4.x (the modules are stored inside /etc/puppetlabs/code/)
 
 
 ##How does it work:
 
-- your git server (gitlab, gitolite, git<whatever\>) will trigger a post-commit hook `curl2puppet.sh` (Check this file inside the directory `examples`). (`flock` is necessary, only if you intend to use more than one puppet server. Actually, the script uses `flask` in single threaded mode, and `flock` become useless with only one puppet server)
+- your git server (gitlab, gitolite, git<whatever\>) will trigger a post-commit hook `curl2puppet.sh` (Check this file inside the directory `config_samples`). (`flock` is necessary, only if you intend to use more than one puppet server. Actually, the script uses `flask` in single threaded mode, and `flock` become useless with only one puppet server)
 
 - your puppet server will receive the trigger and will start fetching the modules. 
 
@@ -32,9 +32,9 @@ The base directory is: /etc/puppetlabs/code/environments/<repo_branch\>/ and it 
 - `.gitignore` containining at least this line: 
 `Puppetfile` 
 
-- `Puppetfile` will be renamed to `Puppetfile.j2` (check `examples` directory for a sample file)
+- `Puppetfile` will be renamed to `Puppetfile.j2` (check `config_samples` directory for a sample file)
 
-- `g10k-webhook.conf` (It will contain a dictionary. Check `examples` directory for a sample file)
+- `g10k-webhook.conf` (It will contain a dictionary. Check `config_samples` directory for a sample file)
 
 Other files (if you still use upstart, otherwise, please create a pull request to add a `Systemd` or `SysV` script): 
 
