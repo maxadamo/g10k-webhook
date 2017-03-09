@@ -18,9 +18,9 @@
 
 ## How does it work:
 
-- `/opt/puppetlabs/puppet/bin/g10k_gitlab_webhook.py` will run a webserver on port `8000` on your puppet server. 
+- `/opt/puppetlabs/puppet/bin/g10k_gitlab_webhook.py` will run a webserver on port `8000` on your puppet server.
 
-- your git server will trigger the post-commit hook <code>curl2puppet.sh</code> (Check this file inside the directory `config_samples`. (`flock` is necessary, only if you intend to use more than one puppet server. Actually, the script uses `flask` in single threaded mode, and `flock` becomes a bit useless.
+- your git server will trigger the post-commit hook `curl2puppet.sh` (Check this file inside the directory `config_samples`. (`flock` is necessary, only if you intend to use more than one puppet server. Actually, the script uses `flask` in single threaded mode, and `flock` becomes a bit useless.
 
 - your puppet server will receive the trigger and will start fetching the modules.
 
@@ -30,7 +30,7 @@ The core file is: `/opt/puppetlabs/puppet/bin/g10k_gitlab_webhook.py` (You pull 
 
 My setup has 3 branches and a master branch that in some case is being used across other branches.
 
-The base directory is: /etc/puppetlabs/code/environments/`your-repository-branch-here`/ and it will contain the following files:
+The base directory is: /etc/puppetlabs/code/environments/`branch-goes-here`/ and it will contain the following files:
 
 - `.gitignore` containining at least this line: `Puppetfile`
 
@@ -40,6 +40,6 @@ The base directory is: /etc/puppetlabs/code/environments/`your-repository-branch
 
 Other files (if you still use upstart, otherwise, please create a pull request to add a `Systemd` or `SysV` script):
 
-- /etc/init/g10k-webhook.conf (You pull it from this repository)
+- `/etc/init/g10k-webhook.conf` (You pull it from this repository)
 
-- /etc/default/g10k-webhook (You pull it from this repository)
+- `/etc/default/g10k-webhook` (You pull it from this repository)
