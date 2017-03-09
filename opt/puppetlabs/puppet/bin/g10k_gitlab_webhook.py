@@ -134,8 +134,7 @@ class G10k(object):
             except Exception as err:
                 loghandler("Failed to pull: %s" % (str(err)), error=True)
             else:
-                loghandler("pulling remote %s: %s" % (self.puppetenv,
-                                                     git_stdout))
+                loghandler("pulling remote %s: %s" % (self.puppetenv, git_stdout))
 
     def render(self):
         """ convert jinja template to Puppetfile """
