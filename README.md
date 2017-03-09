@@ -1,8 +1,8 @@
 # g10k-webhook
 
-g10k-webhook is r10k_gitlab_webhook with steroids, intended for use with g10k
+`g10k-webhook` is `r10k_gitlab_webhook` with steroids, intended for use with g10k
 
-g10k is r10k with steroids that can be downloaded here: [g10k](https://github.com/xorpaul/g10k) 
+`g10k` is `r10k` with steroids that can be downloaded here: [g10k](https://github.com/xorpaul/g10k) 
 
 
 ##Requirements:
