@@ -10,9 +10,11 @@
       - puppet server 4.x (it runs under /etc/puppetlabs/code/)
 """
 import os
+import ast
 import getpass
 import logging
 import argparse
+import ConfigParser
 import subprocess as sp
 from datetime import datetime
 import git
@@ -39,9 +41,7 @@ def loghandler(log_message, error=None):
     """ handle logging """
     log_file = '/var/log/g10k.log'
     log_format = '%(asctime)-15s %(levelname)s %(message)s'
-    logging.basicConfig(filename=log_file,
-                        level=logging.DEBUG,
-                        format=log_format)
+    logging.basicConfig(filename=log_file, level=logging.DEBUG, format=log_format)
     if error:
         logging.error(log_message)
     else:
@@ -52,7 +52,10 @@ def loghandler(log_message, error=None):
 @APP.route('/g10k/<reponame>/<gitenv>')
 def parse_request(reponame, gitenv):
     """ check the git environment and run g10k """
-    branch_list = ['master', 'test', 'uat', 'production']
+    env_dir = os.path.join('/etc/puppetlabs/code/environments', gitenv)
+    config = ConfigParser.RawConfigParser()
+    config.readfp(open(os.path.join(env_dir, 'webhook.conf')))
+    branch_list = ast.literal_eval(config.get('g10k_config', 'branch_list'))
     start_time = datetime.now()
     url_name = str(request.path)
     loghandler("======== Received trigger for branch: %s ========" % (gitenv))
@@ -64,7 +67,8 @@ def parse_request(reponame, gitenv):
             G10k(env_item, reponame).render()
             if cleanup:
                 loghandler("purging module directory")
-            G10k(env_item, reponame, cleanup=True).g10k()
+                G10k(env_item, reponame, cleanup=True).g10k()
+            G10k(env_item, reponame).g10k()
             yield "%s branch updated\n" % (env_item)
 
     if gitenv not in branch_list:
@@ -90,9 +94,9 @@ class G10k(object):
     def __init__(self, puppetenv, reponame, cleanup=None):
         self.puppetenv = puppetenv
         self.env_dir = os.path.join(self.basedir, puppetenv)
-        # dummy dict declaration will make pylint happy
-        self.context = {}
-        execfile(os.path.join(self.env_dir, 'g10k-webhook.conf'))
+        self.config = ConfigParser.RawConfigParser()
+        self.config.readfp(open(os.path.join(self.env_dir, 'webhook.conf')))
+        self.context = ast.literal_eval(self.config.get('g10k_config', 'context'))
         self.reponame = reponame
         args = parse()
         self.cmd_opts = '-puppetfile -verbose'
@@ -109,19 +113,16 @@ class G10k(object):
         try:
             git_stdout = git_cmd.stash()
         except Exception as err:
-            loghandler("Failed stash changes on %s: %s" % (
-                self.env_dir, str(err)), error=True)
+            loghandler("Failed stash changes on %s: %s" % (self.env_dir, str(err)), error=True)
         else:
             git_cmd.stash('clear')
-            loghandler("stashing changes on %s: %s" % (self.env_dir,
-                                                       git_stdout))
+            loghandler("stashing changes on %s: %s" % (self.env_dir, git_stdout))
 
         if local_branch != self.puppetenv:
             try:
                 git_cmd.checkout(self.puppetenv)
             except Exception as err:
-                loghandler("Failed to checkout branch: %s" % (str(err)),
-                           error=True)
+                loghandler("Failed to checkout branch: %s" % (str(err)), error=True)
             else:
                 loghandler("switched to branch: %s" % (self.puppetenv))
 
@@ -138,8 +139,8 @@ class G10k(object):
         """ convert jinja template to Puppetfile """
         puppetfile = os.path.join(self.env_dir, 'Puppetfile')
         self.context.update({'puppetenvironment': str(self.puppetenv)})
-        os.chdir(self.env_dir)
 
+        os.chdir(self.env_dir)
         puppetfile_content = jinja2.Environment(
             loader=jinja2.FileSystemLoader('./')
         ).get_template('Puppetfile.j2').render(self.context)
