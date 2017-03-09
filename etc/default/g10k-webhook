@@ -1,0 +1,11 @@
+# user which will run the script
+G10K_USER='puppet'
+# options:
+#
+# -d: debug (default is off)
+# -f: purge module directory before fetching (default is off)
+# -m <int>: concurrent sessione (default is 100)
+#
+# example: G10K_WEBHOOK_OPTS='-f -m 50'
+#
+G10K_OPTS=''

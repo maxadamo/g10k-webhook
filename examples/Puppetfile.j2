@@ -1,0 +1,93 @@
+#
+# The Repository
+#
+# Summary of variables:
+# depot = 'ssh://gitlab@git.domain.com/puppet'
+# appdepot = 'ssh://gitlab@git.domain.com/puppet-apps'
+# thirdypart = 'ssh://gitlab@git.domain.com/puppet/thirdparty'
+# puppetenvironment = It's guessed from the name of the branch
+#
+#
+### SITE SPECIFIC SPECIAL MODULES
+#
+
+mod 'hieradata',
+  :git => '{{ depot }}/hieradata',
+  :ref => 'master'
+
+mod 'role',
+  :git => '{{ depot }}/role',
+  :ref => '{{ puppetenvironment }}'
+
+mod 'site_keys',
+  :git => '{{ depot }}/site_keys',
+  :ref => 'master'
+
+mod 'shorewall',
+  :git => '{{ depot }}/shorewall',
+  :ref => 'master'
+
+mod 'shorewall6',
+  :git => '{{ depot }}/shorewall6',
+  :ref => 'master'
+
+mod 'puppetmq',
+  :git => '{{ depot }}/puppetmq',
+  :ref => 'master'
+
+#
+### PUBLIC MODULES FROM PUPPETFORGE
+#
+mod 'example42/network', '3.3.5'
+mod 'garethr/docker', '5.3.0'
+mod 'puppet/nginx', '0.5.0'
+mod 'puppetlabs/activemq', '0.4.0'
+mod 'puppetlabs/apache', '1.11.0'
+mod 'puppetlabs/apt', '2.3.0'
+mod 'puppetlabs/concat', '2.2.0'
+mod 'puppetlabs/inifile', '1.6.0'
+mod 'puppetlabs/mcollective'
+mod 'puppetlabs/mysql', '3.10.0'
+mod 'puppetlabs/postgresql', '4.8.0'
+mod 'puppetlabs/puppetdb', '5.1.2'
+mod 'puppetlabs/stdlib', '4.13.1'
+mod 'puppetlabs/tftp', '0.2.3'
+mod 'puppetlabs/tomcat', '1.6.1'
+mod 'puppetlabs/xinetd', '2.0.0'
+mod 'richardc/datacat', '0.6.2'
+mod 'saz/resolv_conf', :latest
+mod 'saz/sudo', '4.1.0'
+mod 'sgnl05/sssd', '0.3.1'
+mod 'uol/host6', '0.0.1'
+mod 'zack/r10k', '3.2.0'
+
+
+# Common classes for all deployments
+mod 'base_os',
+  :git => '{{ depot }}/base_os',
+  :ref => '{{ puppetenvironment }}'
+
+mod 'containers',
+  :git => '{{ depot }}/containers',
+  :ref => 'master'
+
+mod 'galera',
+  :git => '{{ depot }}/galera',
+  :ref => 'master'
+
+# Classes for Internal Applications
+mod 'atlassianbamboo',
+  :git => '{{ appdepot }}/atlassianbamboo'
+
+mod 'atlassiancrowd',
+  :git => '{{ appdepot }}/atlassiancrowd'
+
+mod 'cacti',
+  :git => '{{ appdepot }}/cacti',
+  :ref => '{{ puppetenvironment }}'
+
+mod 'cmon_agent',
+  :git => '{{ appdepot }}/cmon_agent',
+  :ref => '{{ puppetenvironment }}'
+
+# and so far and so on...
