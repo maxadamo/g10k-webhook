@@ -18,9 +18,9 @@
 
 ## How does it work:
 
-- your git server (gitlab, gitolite, git
+- <code>/opt/puppetlabs/puppet/bin/g10k_gitlab_webhook.py<code> will run a webserver on your puppet server
 
-  <whatever\>) will trigger a post-commit hook <code>curl2puppet.sh</code> (Check this file inside the directory <code>config_samples</code>). (<code>flock</code> is necessary, only if you intend to use more than one puppet server. Actually, the script uses <code>flask</code> in single threaded mode, and <code>flock</code> become useless with only one puppet server)</whatever\>
+- your git server will trigger the post-commit hook <code>curl2puppet.sh</code> (Check this file inside the directory <code>config_samples</code>). (<code>flock</code> is necessary, only if you intend to use more than one puppet server. Actually, the script uses <code>flask</code> in single threaded mode, and <code>flock</code> becomes a bit useless.
 
 - your puppet server will receive the trigger and will start fetching the modules.
 
