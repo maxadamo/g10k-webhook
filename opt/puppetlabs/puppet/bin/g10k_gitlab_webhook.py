@@ -65,10 +65,12 @@ def parse_request(reponame, gitenv):
         for env_item in branches_list:
             G10k(env_item, reponame).git()
             G10k(env_item, reponame).render()
-            if cleanup:
-                loghandler("purging module directory")
-                G10k(env_item, reponame, cleanup=True).g10k()
-            G10k(env_item, reponame).g10k()
+            if reponame != 'environments':
+                if cleanup:
+                    loghandler("purging module directory")
+                    G10k(env_item, reponame, cleanup=True).g10k()
+                else:
+                    G10k(env_item, reponame).g10k()
             yield "%s branch updated\n" % (env_item)
 
     if gitenv not in branch_list:
@@ -132,7 +134,7 @@ class G10k(object):
             except Exception as err:
                 loghandler("Failed to pull: %s" % (str(err)), error=True)
             else:
-                loghandler("pulled remote %s: %s" % (self.puppetenv,
+                loghandler("pulling remote %s: %s" % (self.puppetenv,
                                                      git_stdout))
 
     def render(self):
