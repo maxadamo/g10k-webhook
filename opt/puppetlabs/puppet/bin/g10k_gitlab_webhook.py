@@ -4,8 +4,10 @@
       - python git (deb: python-git | rpm: GitPython)
       - python-flask
       - python-jinja2
+      - /etc/puppetlabs/g10k.conf
       - /opt/puppetlabs/puppet/bin/g10k: https://github.com/xorpaul/g10k/
-      - /opt/puppetlabs/g10k/cache (owned by puppet)
+      - cache dir owned by puppet (set inside g10k.conf).
+        g10k uses hardlinks and the cache must be in the same partition)
       - /var/log/g10k.log (owned by puppet. Do not forget logrotate)
       - puppet server 4.x (it runs under /etc/puppetlabs/code/)
 """
@@ -54,7 +56,7 @@ def parse_request(reponame, gitenv):
     """ check the git environment and run g10k """
     env_dir = os.path.join('/etc/puppetlabs/code/environments', gitenv)
     config = ConfigParser.RawConfigParser()
-    config.readfp(open(os.path.join(env_dir, 'webhook.conf')))
+    config.readfp(open('/etc/puppetlabs/g10k.conf'))
     branch_list = ast.literal_eval(config.get('g10k_config', 'branch_list'))
     start_time = datetime.now()
     url_name = str(request.path)
@@ -97,7 +99,7 @@ class G10k(object):
         self.puppetenv = puppetenv
         self.env_dir = os.path.join(self.basedir, puppetenv)
         self.config = ConfigParser.RawConfigParser()
-        self.config.readfp(open(os.path.join(self.env_dir, 'webhook.conf')))
+        self.config.readfp(open('/etc/puppetlabs/g10k.conf'))
         self.context = ast.literal_eval(self.config.get('g10k_config', 'context'))
         self.reponame = reponame
         args = parse()
@@ -151,10 +153,14 @@ class G10k(object):
 
     def g10k(self):
         """ run g10k """
+        self.config = ConfigParser.RawConfigParser()
+        self.config.readfp(open('/etc/puppetlabs/g10k.conf'))
+        self.cachedir = self.config.get('g10k_config', 'g10k_cachedir')
+
         os.chdir(self.env_dir)
         loghandler("running g10k for environment %s" % (self.puppetenv))
-        g10k_cmd = 'g10k_cachedir=/opt/puppetlabs/g10k/cache\
-                   /opt/puppetlabs/puppet/bin/g10k %s' % (self.cmd_opts)
+        g10k_cmd = 'g10k_cachedir=%s /opt/puppetlabs/puppet/bin/g10k %s' % (
+            self.cachedir, self.cmd_opts)
         g10k_proc = sp.Popen(g10k_cmd, shell=True,
                              stdout=sp.PIPE, stderr=sp.STDOUT)
         g10k_proc_out = g10k_proc.communicate()[0]
@@ -168,8 +174,16 @@ class G10k(object):
 
 if __name__ == '__main__':
 
+    config = ConfigParser.RawConfigParser()
+    config.readfp(open('/etc/puppetlabs/g10k.conf'))
+    cachedir = config.get('g10k_config', 'g10k_cachedir')
+
+    # check if the user is puppet, and if we have access to logs and cache
     if getpass.getuser() != 'puppet':
         print 'please run as puppet user'
+        os.sys.exit(1)
+    elif not os.access(cachedir, os.W_OK):
+        print 'could not write to %s' % (g10k_cachedir)
         os.sys.exit(1)
     elif not os.access('/var/log/g10k.log', os.W_OK):
         print 'could not write to /var/log/g10k.log'
