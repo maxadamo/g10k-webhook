@@ -36,7 +36,9 @@ The base directory is: /etc/puppetlabs/code/environments/`branch-goes-here`/ and
 
 - `Puppetfile` will be renamed to `Puppetfile.j2` (check `config_samples` directory for a sample file)
 
-- `webhook.conf` (It will contain a dictionary. Check `config_samples` directory for a sample file)
+Other files:
+
+- `/etc/puppetlabs/g10.conf` (You pull it from this repository)
 
 Other files (if you still use upstart, otherwise, please create a pull request to add a `Systemd` or `SysV` script):
 

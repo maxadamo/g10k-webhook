@@ -30,12 +30,10 @@ APP = Flask(__name__)
 def parse():
     """ pass arguments to the script """
     parser = argparse.ArgumentParser(description="a flask App to trigger g10k")
-    parser.add_argument('-m', '--maxworker', default=100, type=int,
-                        help='how many routines run in parallel (default 100)')
-    parser.add_argument('-f', '--force', action='store_true',
-                        help='purge the Puppet environment directory')
-    parser.add_argument('-d', '--debug', action='store_true',
-                        help='runs in debug mode')
+    parser.add_argument('-m', '--maxworker', default=100, type=int, help='how many routines run in parallel (default 100)')
+    parser.add_argument('-p', '--port', default=8000, type=int, help='socket port (default 8000)')
+    parser.add_argument('-f', '--force', action='store_true', help='purge the Puppet environment directory')
+    parser.add_argument('-d', '--debug', action='store_true', help='runs in debug mode')
     return parser.parse_args()
 
 
@@ -174,9 +172,16 @@ class G10k(object):
 
 if __name__ == '__main__':
 
-    config = ConfigParser.RawConfigParser()
-    config.readfp(open('/etc/puppetlabs/g10k.conf'))
-    cachedir = config.get('g10k_config', 'g10k_cachedir')
+    CONF_FILE = '/etc/puppetlabs/g10k.conf'
+
+    # check if we have read access to configuration file
+    if os.access(CONF_FILE, os.R_OK):
+        config = ConfigParser.RawConfigParser()
+        config.readfp(open(CONF_FILE))
+        cachedir = config.get('g10k_config', 'g10k_cachedir')
+    else:
+        print 'could not access %s' % (CONF_FILE)
+        os.sys.exit(1)
 
     # check if the user is puppet, and if we have access to logs and cache
     if getpass.getuser() != 'puppet':
@@ -190,7 +195,8 @@ if __name__ == '__main__':
         os.sys.exit(1)
 
     ARGS = parse()
+    # Here we go:
     if ARGS.debug:
-        APP.run(debug=True, host='0.0.0.0', port=8000)
+        APP.run(debug=True, host='0.0.0.0', port=ARGS.port)
     else:
-        APP.run(debug=False, host='0.0.0.0', port=8000)
+        APP.run(debug=False, host='0.0.0.0', port=ARGS.port)
