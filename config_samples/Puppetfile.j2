@@ -1,16 +1,11 @@
 #
 # The Repository
 #
-# Summary of variables:
-# depot = 'ssh://gitlab@git.domain.com/puppet'
-# appdepot = 'ssh://gitlab@git.domain.com/puppet-apps'
-# thirdypart = 'ssh://gitlab@git.domain.com/puppet/thirdparty'
-# puppetenvironment = It's guessed from the name of the branch
+# the  variables are sourced from /etc/puppetlabs/g10k.conf
 #
 #
 ### SITE SPECIFIC SPECIAL MODULES
 #
-
 mod 'hieradata',
   :git => '{{ depot }}/hieradata',
   :ref => 'master'
@@ -60,7 +55,6 @@ mod 'saz/sudo', '4.1.0'
 mod 'sgnl05/sssd', '0.3.1'
 mod 'uol/host6', '0.0.1'
 mod 'zack/r10k', '3.2.0'
-
 
 # Common classes for all deployments
 mod 'base_os',
