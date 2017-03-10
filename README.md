@@ -18,9 +18,9 @@
 
 ## How does it work:
 
-- `/opt/puppetlabs/puppet/bin/g10k_gitlab_webhook.py` will run a webserver on port `8000` on your puppet server.
+- `/opt/puppetlabs/puppet/bin/g10k_gitlab_webhook.py` will run a webserver on your puppet server (default port is `8000`).
 
-- your git server will trigger the post-commit hook `curl2puppet.sh` (Check this file inside the directory `config_samples`. (`flock` is necessary, only if you intend to use more than one puppet server. Actually, the script uses `flask` in single threaded mode, and `flock` becomes a bit useless.
+- your git server will trigger a post-commit hook (see example below: I called it `curl2puppet.sh`).
 
 - your puppet server will receive the trigger and will start fetching the modules.
 
@@ -45,3 +45,20 @@ Other files (if you still use upstart, otherwise, please create a pull request t
 - `/etc/init/g10k-webhook.conf` (You pull it from this repository)
 
 - `/etc/default/g10k-webhook` (You pull it from this repository)
+
+## curl2puppet.sh:
+
+This is the script that you run on your git server as `post-commit` hook. It extracts repository name and branch name and sends it to puppet:
+
+
+	#!/bin/bash
+	#
+	FLOCKDIR="/var/opt/gitlab/flock_dir"
+	REPONAME=$(basename $(basename "$PWD") '.git')
+	
+	while read oldrev newrev refname; do
+	    BRANCH=$(git rev-parse --symbolic --abbrev-ref $refname)
+	    echo "flock ${FLOCKDIR}/puppet01.domain.com.lock curl http://puppet01.domain.com:8000/g10k/${REPONAME}/${BRANCH} &>/dev/null && rm -f ${FLOCKDIR}/puppet01.domain.com.lock" | at now
+	done
+	
+**N.B.**: `flock` is only necessary, if you intend to use more than one puppet server. Actually, the script uses `flask` in single threaded mode, and `flock` becomes a bit useless. Future versions of g10k will have an option to limit the number of concurrent Go routines, and the use of `flock` will not be necessary any longer. 
