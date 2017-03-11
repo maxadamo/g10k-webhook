@@ -46,8 +46,7 @@ Other files (if you still use upstart, otherwise, please create a pull request t
 
 ## curl2puppet.sh:
 
-This is the script that you run on your git server as `post-commit` hook. It extracts repository name and branch name and sends it to puppet:
-
+This is the script that you run on your git server as `post-commit` hook (tested with Gitlab). It extracts repository name and branch name and sends it to puppet:
 
 	#!/bin/bash
 	#
@@ -59,4 +58,4 @@ This is the script that you run on your git server as `post-commit` hook. It ext
 	    echo "flock ${FLOCKDIR}/puppet01.domain.com.lock curl http://puppet01.domain.com:8000/g10k/${REPONAME}/${BRANCH} &>/dev/null && rm -f ${FLOCKDIR}/puppet01.domain.com.lock" | at now
 	done
 
-**N.B.**: `flock` is only necessary, if you intend to use more than one puppet server. Actually, the script uses `flask` in single threaded mode, and `flock` becomes a bit useless. Future versions of g10k will have an option to limit the number of concurrent Go routines, and the use of `flock` will not be necessary any longer.
+**N.B.**: `flock` is only necessary, if you intend to use more than one puppet server. Actually, the script uses `flask` in single threaded mode, and `flock` becomes a bit useless. Future versions of g10k will have an option to limit the number of concurrent Go routines, and use of `flock` will not be necessary any longer.
