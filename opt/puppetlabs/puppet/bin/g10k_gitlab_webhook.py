@@ -56,7 +56,7 @@ def parse_request(reponame, gitenv):
             G10k(env_item, reponame).render()
             if reponame != 'environments':
                 if cleanup or force:
-                    loghandler("purging module directory")
+                    loghandler("purging modules directory")
                     G10k(env_item, reponame, cleanup=True).g10k()
                 else:
                     G10k(env_item, reponame).g10k()
