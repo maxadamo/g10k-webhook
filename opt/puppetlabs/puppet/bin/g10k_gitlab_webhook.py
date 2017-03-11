@@ -173,6 +173,7 @@ class G10k(object):
 if __name__ == '__main__':
 
     CONF_FILE = '/etc/puppetlabs/g10k.conf'
+    BASE_DIR = '/etc/puppetlabs/code/environments'
 
     # check if we have read access to configuration file
     if os.access(CONF_FILE, os.R_OK):
@@ -183,19 +184,28 @@ if __name__ == '__main__':
         print 'could not access %s' % (CONF_FILE)
         os.sys.exit(1)
 
-    # check if the user is puppet, and if we have access to logs and cache
+    # check if everything is fine
     if getpass.getuser() != 'puppet':
         print 'please run as puppet user'
+        loghandler('please run as puppet user', error=True)
+        loghandler('giving up and exiting... bye...', error=True)
         os.sys.exit(1)
     elif not os.access(cachedir, os.W_OK):
-        print 'could not write to %s' % (g10k_cachedir)
+        print 'could not write to %s' % (cachedir)
+        loghandler('could not write to %s' % (cachedir), error=True)
+        loghandler('giving up and exiting... bye...', error=True)
+        os.sys.exit(1)
+    elif hex(os.stat(BASE_DIR)[2]) != hex(os.stat(cachedir)[2]):
+        print '%s and %s not in the same partion. Could not create hardlinks' % (BASE_DIR, cachedir)
+        loghandler('%s and %s not in the same partion. Could not create hardlinks' % (BASE_DIR, cachedir), error=True)
+        loghandler('giving up and exiting... bye...', error=True)
         os.sys.exit(1)
     elif not os.access('/var/log/g10k.log', os.W_OK):
         print 'could not write to /var/log/g10k.log'
         os.sys.exit(1)
 
     ARGS = parse()
-    # Here we go:
+    # Everything looks fine. Here we go:
     if ARGS.debug:
         APP.run(debug=True, host='0.0.0.0', port=ARGS.port)
     else:
