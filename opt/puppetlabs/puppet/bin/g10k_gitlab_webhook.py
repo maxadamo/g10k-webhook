@@ -80,7 +80,6 @@ def parse_request(reponame, gitenv):
 class G10k(object):
     """ g10k class: render puppet file and update puppet env """
     basedir = '/etc/puppetlabs/code/environments'
-    # make pytlin happy be declaring the empty dict that will be sourced
 
     def __init__(self, puppetenv, reponame, cleanup=None):
         self.puppetenv = puppetenv
