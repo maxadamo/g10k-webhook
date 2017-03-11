@@ -38,7 +38,7 @@ The base directory is: /etc/puppetlabs/code/environments/`branch-goes-here`/ and
 
 Other files:
 
-- `/etc/puppetlabs/g10.conf` (You pull it from this repository)
+- `/etc/puppetlabs/g10k.conf` (You pull it from this repository)
 
 Other files (if you still use upstart, otherwise, please create a pull request to add a `Systemd` or `SysV` script):
 
