@@ -8,7 +8,6 @@
       - /opt/puppetlabs/puppet/bin/g10k: https://github.com/xorpaul/g10k/
       - cache dir owned by puppet (set inside g10k.conf).
         g10k uses hardlinks and the cache must be in the same partition)
-      - /var/log/g10k.log (owned by puppet. Do not forget logrotate)
       - puppet server 4.x (it runs under /etc/puppetlabs/code/)
 """
 import os
@@ -28,7 +27,10 @@ APP = Flask(__name__)
 
 def loghandler(log_message, error=None):
     """ handle logging """
-    log_file = '/var/log/g10k.log'
+    config = ConfigParser.RawConfigParser()
+    config.readfp(open('/etc/puppetlabs/g10k.conf'))
+    g10k_log = ast.literal_eval(config.get('g10k', 'g10k_log'))
+    log_file = g10k_log
     log_format = '%(asctime)-15s %(levelname)s %(message)s'
     logging.basicConfig(filename=log_file, level=logging.DEBUG, format=log_format)
     if error:
@@ -163,6 +165,7 @@ if __name__ == '__main__':
     if os.access(CONF_FILE, os.R_OK):
         CONFIG = ConfigParser.RawConfigParser()
         CONFIG.readfp(open(CONF_FILE))
+        G10K_LOG = ast.literal_eval(config.get('g10k', 'g10k_log'))
         CACHEDIR = CONFIG.get('g10k', 'g10k_cachedir')
         USER = CONFIG.get('g10k', 'g10k_user')
         PORT = CONFIG.get('g10k', 'port')
@@ -188,8 +191,8 @@ if __name__ == '__main__':
             BASE_DIR, CACHEDIR), error=True)
         loghandler('giving up and exiting... bye...', error=True)
         os.sys.exit(1)
-    elif not os.access('/var/log/g10k.log', os.W_OK):
-        print 'could not write to /var/log/g10k.log'
+    elif not os.access(G10K_LOG, os.W_OK):
+        print 'could not write to %s' % (G10K_LOG)
         os.sys.exit(1)
 
     # Everything looks fine. Here we go:
