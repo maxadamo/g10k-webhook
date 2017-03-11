@@ -15,7 +15,6 @@ import os
 import ast
 import getpass
 import logging
-import argparse
 import ConfigParser
 import subprocess as sp
 from datetime import datetime
@@ -25,16 +24,6 @@ from flask import Flask
 from flask import request
 
 APP = Flask(__name__)
-
-
-def parse():
-    """ pass arguments to the script """
-    parser = argparse.ArgumentParser(description="a flask App to trigger g10k")
-    parser.add_argument('-m', '--maxworker', default=100, type=int, help='how many routines run in parallel (default 100)')
-    parser.add_argument('-p', '--port', default=8000, type=int, help='socket port (default 8000)')
-    parser.add_argument('-f', '--force', action='store_true', help='purge the Puppet environment directory')
-    parser.add_argument('-d', '--debug', action='store_true', help='runs in debug mode')
-    return parser.parse_args()
 
 
 def loghandler(log_message, error=None):
@@ -52,10 +41,10 @@ def loghandler(log_message, error=None):
 @APP.route('/g10k/<reponame>/<gitenv>')
 def parse_request(reponame, gitenv):
     """ check the git environment and run g10k """
-    env_dir = os.path.join('/etc/puppetlabs/code/environments', gitenv)
     config = ConfigParser.RawConfigParser()
     config.readfp(open('/etc/puppetlabs/g10k.conf'))
     branch_list = ast.literal_eval(config.get('g10k', 'branch_list'))
+    force = ast.literal_eval(config.get('g10k', 'force'))
     start_time = datetime.now()
     url_name = str(request.path)
     loghandler("======== Received trigger for branch: %s ========" % (gitenv))
@@ -66,7 +55,7 @@ def parse_request(reponame, gitenv):
             G10k(env_item, reponame).git()
             G10k(env_item, reponame).render()
             if reponame != 'environments':
-                if cleanup:
+                if cleanup or force:
                     loghandler("purging module directory")
                     G10k(env_item, reponame, cleanup=True).g10k()
                 else:
@@ -98,12 +87,12 @@ class G10k(object):
         self.env_dir = os.path.join(self.basedir, puppetenv)
         self.config = ConfigParser.RawConfigParser()
         self.config.readfp(open('/etc/puppetlabs/g10k.conf'))
-        self.context = ast.literal_eval(self.config.get('g10k', 'context'))
+        self.cachedir = self.config.get('g10k', 'g10k_cachedir')
+        self.puppetfile_vars = ast.literal_eval(self.config.get('g10k', 'puppetfile_vars'))
         self.reponame = reponame
-        args = parse()
         self.cmd_opts = '-puppetfile -verbose'
-        # self.cmd_opts = '-puppetfile -verbose -maxworker %s' % (args.maxworker)
-        if cleanup or args.force:
+        # self.cmd_opts = '-puppetfile -verbose -maxworker %s' % (maxworker)
+        if cleanup:
             self.cmd_opts += ' -force'
 
     def git(self):
@@ -139,22 +128,18 @@ class G10k(object):
     def render(self):
         """ convert jinja template to Puppetfile """
         puppetfile = os.path.join(self.env_dir, 'Puppetfile')
-        self.context.update({'puppetenvironment': str(self.puppetenv)})
+        self.puppetfile_vars.update({'puppetenvironment': str(self.puppetenv)})
 
         os.chdir(self.env_dir)
         puppetfile_content = jinja2.Environment(
             loader=jinja2.FileSystemLoader('./')
-        ).get_template('Puppetfile.j2').render(self.context)
+        ).get_template('Puppetfile.j2').render(self.puppetfile_vars)
         puppetfile_open = open(puppetfile, 'w+')
         puppetfile_open.write(puppetfile_content)
         puppetfile_open.close()
 
     def g10k(self):
         """ run g10k """
-        self.config = ConfigParser.RawConfigParser()
-        self.config.readfp(open('/etc/puppetlabs/g10k.conf'))
-        self.cachedir = self.config.get('g10k', 'g10k_cachedir')
-
         os.chdir(self.env_dir)
         loghandler("running g10k for environment %s" % (self.puppetenv))
         g10k_cmd = 'g10k_cachedir=%s /opt/puppetlabs/puppet/bin/g10k %s' % (
@@ -177,36 +162,36 @@ if __name__ == '__main__':
 
     # check if we have read access to configuration file
     if os.access(CONF_FILE, os.R_OK):
-        config = ConfigParser.RawConfigParser()
-        config.readfp(open(CONF_FILE))
-        cachedir = config.get('g10k', 'g10k_cachedir')
+        CONFIG = ConfigParser.RawConfigParser()
+        CONFIG.readfp(open(CONF_FILE))
+        CACHEDIR = CONFIG.get('g10k', 'g10k_cachedir')
+        USER = CONFIG.get('g10k', 'g10k_user')
+        PORT = CONFIG.get('g10k', 'port')
+        DEBUG = ast.literal_eval(CONFIG.get('g10k', 'debug'))
     else:
         print 'could not access %s' % (CONF_FILE)
         os.sys.exit(1)
 
     # check if everything is fine
-    if getpass.getuser() != 'puppet':
+    if getpass.getuser() != USER:
         print 'please run as puppet user'
         loghandler('please run as puppet user', error=True)
         loghandler('giving up and exiting... bye...', error=True)
         os.sys.exit(1)
-    elif not os.access(cachedir, os.W_OK):
-        print 'could not write to %s' % (cachedir)
-        loghandler('could not write to %s' % (cachedir), error=True)
+    elif not os.access(CACHEDIR, os.W_OK):
+        print 'could not write to %s' % (CACHEDIR)
+        loghandler('could not write to %s' % (CACHEDIR), error=True)
         loghandler('giving up and exiting... bye...', error=True)
         os.sys.exit(1)
-    elif hex(os.stat(BASE_DIR)[2]) != hex(os.stat(cachedir)[2]):
-        print '%s and %s not in the same partion. Could not create hardlinks' % (BASE_DIR, cachedir)
-        loghandler('%s and %s not in the same partion. Could not create hardlinks' % (BASE_DIR, cachedir), error=True)
+    elif hex(os.stat(BASE_DIR)[2]) != hex(os.stat(CACHEDIR)[2]):
+        print '%s and %s not in the same partion. Could not create hardlinks' % (BASE_DIR, CACHEDIR)
+        loghandler('%s and %s not in the same partion. Could not create hardlinks' % (
+            BASE_DIR, CACHEDIR), error=True)
         loghandler('giving up and exiting... bye...', error=True)
         os.sys.exit(1)
     elif not os.access('/var/log/g10k.log', os.W_OK):
         print 'could not write to /var/log/g10k.log'
         os.sys.exit(1)
 
-    ARGS = parse()
     # Everything looks fine. Here we go:
-    if ARGS.debug:
-        APP.run(debug=True, host='0.0.0.0', port=ARGS.port)
-    else:
-        APP.run(debug=False, host='0.0.0.0', port=ARGS.port)
+    APP.run(debug=DEBUG, host='0.0.0.0', port=PORT)
