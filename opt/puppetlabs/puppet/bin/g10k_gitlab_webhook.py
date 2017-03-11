@@ -55,7 +55,7 @@ def parse_request(reponame, gitenv):
     env_dir = os.path.join('/etc/puppetlabs/code/environments', gitenv)
     config = ConfigParser.RawConfigParser()
     config.readfp(open('/etc/puppetlabs/g10k.conf'))
-    branch_list = ast.literal_eval(config.get('g10k_config', 'branch_list'))
+    branch_list = ast.literal_eval(config.get('g10k', 'branch_list'))
     start_time = datetime.now()
     url_name = str(request.path)
     loghandler("======== Received trigger for branch: %s ========" % (gitenv))
@@ -98,7 +98,7 @@ class G10k(object):
         self.env_dir = os.path.join(self.basedir, puppetenv)
         self.config = ConfigParser.RawConfigParser()
         self.config.readfp(open('/etc/puppetlabs/g10k.conf'))
-        self.context = ast.literal_eval(self.config.get('g10k_config', 'context'))
+        self.context = ast.literal_eval(self.config.get('g10k', 'context'))
         self.reponame = reponame
         args = parse()
         self.cmd_opts = '-puppetfile -verbose'
@@ -153,7 +153,7 @@ class G10k(object):
         """ run g10k """
         self.config = ConfigParser.RawConfigParser()
         self.config.readfp(open('/etc/puppetlabs/g10k.conf'))
-        self.cachedir = self.config.get('g10k_config', 'g10k_cachedir')
+        self.cachedir = self.config.get('g10k', 'g10k_cachedir')
 
         os.chdir(self.env_dir)
         loghandler("running g10k for environment %s" % (self.puppetenv))
@@ -178,7 +178,7 @@ if __name__ == '__main__':
     if os.access(CONF_FILE, os.R_OK):
         config = ConfigParser.RawConfigParser()
         config.readfp(open(CONF_FILE))
-        cachedir = config.get('g10k_config', 'g10k_cachedir')
+        cachedir = config.get('g10k', 'g10k_cachedir')
     else:
         print 'could not access %s' % (CONF_FILE)
         os.sys.exit(1)
