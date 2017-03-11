@@ -29,7 +29,7 @@ def loghandler(log_message, error=None):
     """ handle logging """
     config = ConfigParser.RawConfigParser()
     config.readfp(open('/etc/puppetlabs/g10k.conf'))
-    g10k_log = ast.literal_eval(config.get('g10k', 'g10k_log'))
+    g10k_log = config.get('g10k', 'g10k_log')
     log_file = g10k_log
     log_format = '%(asctime)-15s %(levelname)s %(message)s'
     logging.basicConfig(filename=log_file, level=logging.DEBUG, format=log_format)
@@ -165,10 +165,10 @@ if __name__ == '__main__':
     if os.access(CONF_FILE, os.R_OK):
         CONFIG = ConfigParser.RawConfigParser()
         CONFIG.readfp(open(CONF_FILE))
-        G10K_LOG = ast.literal_eval(config.get('g10k', 'g10k_log'))
+        G10K_LOG = CONFIG.get('g10k', 'g10k_log')
         CACHEDIR = CONFIG.get('g10k', 'g10k_cachedir')
         USER = CONFIG.get('g10k', 'g10k_user')
-        PORT = CONFIG.get('g10k', 'port')
+        PORT = int(CONFIG.get('g10k', 'port'))
         DEBUG = ast.literal_eval(CONFIG.get('g10k', 'debug'))
     else:
         print 'could not access %s' % (CONF_FILE)
