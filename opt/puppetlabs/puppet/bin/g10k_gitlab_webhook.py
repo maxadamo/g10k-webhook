@@ -177,7 +177,7 @@ if __name__ == '__main__':
     # check if everything is fine
     if getpass.getuser() != USER:
         print 'please run as %s user' % (USER)
-        loghandler('please run as %s user'  % (USER), error=True)
+        loghandler('please run as %s user' % (USER), error=True)
         loghandler('giving up and exiting... bye...', error=True)
         os.sys.exit(1)
     elif not os.access(CACHEDIR, os.W_OK):
