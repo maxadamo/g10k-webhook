@@ -11,8 +11,6 @@
 - python-flask
 - python-jinja2
 - /opt/puppetlabs/puppet/bin/g10k: https://github.com/xorpaul/g10k/
-- /opt/puppetlabs/g10k/cache (owned by puppet)
-- /var/log/g10k.log (owned by puppet. Do not forget a logrotate)
 - puppet server 4.x (the modules are stored inside /etc/puppetlabs/code/)
 ```
 
