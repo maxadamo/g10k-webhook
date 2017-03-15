@@ -160,6 +160,7 @@ if __name__ == '__main__':
 
     CONF_FILE = '/etc/puppetlabs/g10k.conf'
     BASE_DIR = '/etc/puppetlabs/code/environments'
+    G10K_BIN = '/opt/puppetlabs/puppet/bin/g10k'
 
     # check if we have read access to configuration file
     if os.access(CONF_FILE, os.R_OK):
@@ -178,18 +179,23 @@ if __name__ == '__main__':
     if getpass.getuser() != USER:
         print 'please run as %s user' % (USER)
         loghandler('please run as %s user' % (USER), error=True)
-        loghandler('giving up and exiting... bye...', error=True)
+        loghandler('giving up and exiting ... bye ...', error=True)
+        os.sys.exit(1)
+    elif not os.access(G10K_BIN, os.X_OK):
+        print '%s could not be found or is not executable' % (G10K_BIN)
+        loghandler('%s could not be found or is not executable' % (G10K_BIN), error=True)
+        loghandler('giving up and exiting ... bye ...', error=True)
         os.sys.exit(1)
     elif not os.access(CACHEDIR, os.W_OK):
         print 'could not write to %s' % (CACHEDIR)
         loghandler('could not write to %s' % (CACHEDIR), error=True)
-        loghandler('giving up and exiting... bye...', error=True)
+        loghandler('giving up and exiting ... bye ...', error=True)
         os.sys.exit(1)
     elif hex(os.stat(BASE_DIR)[2]) != hex(os.stat(CACHEDIR)[2]):
         print '%s and %s not in the same partion. Could not create hardlinks' % (BASE_DIR, CACHEDIR)
         loghandler('%s and %s not in the same partion. Could not create hardlinks' % (
             BASE_DIR, CACHEDIR), error=True)
-        loghandler('giving up and exiting... bye...', error=True)
+        loghandler('giving up and exiting ... bye ...', error=True)
         os.sys.exit(1)
     elif not os.access(G10K_LOG, os.W_OK):
         print 'could not write to %s' % (G10K_LOG)
