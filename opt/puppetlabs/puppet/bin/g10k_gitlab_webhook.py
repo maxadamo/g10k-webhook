@@ -25,12 +25,8 @@ from flask import request
 APP = Flask(__name__)
 
 
-def loghandler(log_message, error=None):
+def loghandler(log_message, log_file, error=None):
     """ handle logging """
-    config = ConfigParser.RawConfigParser()
-    config.readfp(open('/etc/puppetlabs/g10k.conf'))
-    g10k_log = config.get('g10k', 'g10k_log')
-    log_file = g10k_log
     log_format = '%(asctime)-15s %(levelname)s %(message)s'
     logging.basicConfig(filename=log_file, level=logging.DEBUG, format=log_format)
     if error:
@@ -47,9 +43,10 @@ def parse_request(reponame, gitenv):
     config.readfp(open('/etc/puppetlabs/g10k.conf'))
     branch_list = ast.literal_eval(config.get('g10k', 'branch_list'))
     force = ast.literal_eval(config.get('g10k', 'force'))
+    g10k_log = config.get('g10k', 'g10k_log')
     start_time = datetime.now()
     url_name = str(request.path)
-    loghandler("======== Received trigger for branch: %s ========" % (gitenv))
+    loghandler("======== Received trigger for branch: %s ========" % (gitenv), g10k_log)
 
     def generate(branches_list, cleanup=None):
         """ create generator with output message """
@@ -58,7 +55,7 @@ def parse_request(reponame, gitenv):
             G10k(env_item, reponame).render()
             if reponame != 'environments':
                 if cleanup or force:
-                    loghandler("purging modules directory")
+                    loghandler("purging modules directory", g10k_log)
                     G10k(env_item, reponame, cleanup=True).g10k()
                 else:
                     G10k(env_item, reponame).g10k()
@@ -74,8 +71,7 @@ def parse_request(reponame, gitenv):
         else:
             result = "".join(generate(branch_list))
         time_spent = (datetime.now() - start_time).seconds
-        loghandler("======== Trigger processed in %s seconds ========" % (
-            time_spent))
+        loghandler("======== Trigger processed in %s seconds ========" % (time_spent), g10k_log)
         return result
 
 
@@ -88,7 +84,7 @@ class G10k(object):
         self.env_dir = os.path.join(self.basedir, puppetenv)
         self.config = ConfigParser.RawConfigParser()
         self.config.readfp(open('/etc/puppetlabs/g10k.conf'))
-        self.cachedir = self.config.get('g10k', 'g10k_cachedir')
+        self.g10k_log = self.config.get('g10k', 'g10k_log')
         self.puppetfile_vars = ast.literal_eval(self.config.get('g10k', 'puppetfile_vars'))
         self.reponame = reponame
         self.cmd_opts = '-puppetfile -verbose'
@@ -98,33 +94,34 @@ class G10k(object):
 
     def git(self):
         """ git: stash, checkout, pull """
-        loghandler("==== Start update of puppet env: %s" % (self.puppetenv))
+        loghandler("==== Start update of puppet env: %s" % (self.puppetenv), self.g10k_log)
         git_cmd = git.cmd.Git(self.env_dir)
         local_branch = str(git_cmd.rev_parse('--abbrev-ref', 'HEAD'))
 
         try:
             git_stdout = git_cmd.stash()
         except Exception as err:
-            loghandler("Failed stash changes on %s: %s" % (self.env_dir, str(err)), error=True)
+            loghandler("Failed stash changes on %s: %s" % (
+                self.env_dir, str(err)), self.g10k_log, error=True)
         else:
             git_cmd.stash('clear')
-            loghandler("stashing changes on %s: %s" % (self.env_dir, git_stdout))
+            loghandler("stashing changes on %s: %s" % (self.env_dir, git_stdout), self.g10k_log)
 
         if local_branch != self.puppetenv:
             try:
                 git_cmd.checkout(self.puppetenv)
             except Exception as err:
-                loghandler("Failed to checkout branch: %s" % (str(err)), error=True)
+                loghandler("Failed to checkout branch: %s" % (str(err)), self.g10k_log, error=True)
             else:
-                loghandler("switched to branch: %s" % (self.puppetenv))
+                loghandler("switched to branch: %s" % (self.puppetenv), self.g10k_log)
 
         if self.reponame == 'environments':
             try:
                 git_stdout = git_cmd.pull()
             except Exception as err:
-                loghandler("Failed to pull: %s" % (str(err)), error=True)
+                loghandler("Failed to pull: %s" % (str(err)), self.g10k_log, error=True)
             else:
-                loghandler("pulling remote %s: %s" % (self.puppetenv, git_stdout))
+                loghandler("pulling remote %s: %s" % (self.puppetenv, git_stdout), self.g10k_log)
 
     def render(self):
         """ convert jinja template to Puppetfile """
@@ -142,18 +139,18 @@ class G10k(object):
     def g10k(self):
         """ run g10k """
         os.chdir(self.env_dir)
-        loghandler("running g10k for environment %s" % (self.puppetenv))
+        loghandler("running g10k for environment %s" % (self.puppetenv), self.g10k_log)
         g10k_cmd = 'g10k_cachedir=%s /opt/puppetlabs/puppet/bin/g10k %s' % (
-            self.cachedir, self.cmd_opts)
+            self.config.get('g10k', 'g10k_cachedir'), self.cmd_opts)
         g10k_proc = sp.Popen(g10k_cmd, shell=True,
                              stdout=sp.PIPE, stderr=sp.STDOUT)
         g10k_proc_out = g10k_proc.communicate()[0]
         g10k_retcode = g10k_proc.returncode
         if g10k_retcode is not 0:
-            loghandler(g10k_proc_out, error=True)
+            loghandler(g10k_proc_out, self.g10k_log, error=True)
         else:
-            loghandler(g10k_proc_out.split('\n')[-2])
-        loghandler("==== End update of puppet env: %s" % (self.puppetenv))
+            loghandler(g10k_proc_out.split('\n')[-2], self.g10k_log)
+        loghandler("==== End update of puppet env: %s" % (self.puppetenv), self.g10k_log)
 
 
 if __name__ == '__main__':
@@ -176,29 +173,29 @@ if __name__ == '__main__':
         os.sys.exit(1)
 
     # check if everything is fine
-    if getpass.getuser() != USER:
+    if not os.access(G10K_LOG, os.W_OK):
+        print 'could not write to %s' % (G10K_LOG)
+        os.sys.exit(1)
+    elif getpass.getuser() != USER:
         print 'please run as %s user' % (USER)
-        loghandler('please run as %s user' % (USER), error=True)
-        loghandler('giving up and exiting ... bye ...', error=True)
+        loghandler('please run as %s user' % (USER), G10K_LOG, error=True)
+        loghandler('giving up and exiting ... bye ...', G10K_LOG, error=True)
         os.sys.exit(1)
     elif not os.access(G10K_BIN, os.X_OK):
         print '%s could not be found or is not executable' % (G10K_BIN)
-        loghandler('%s could not be found or is not executable' % (G10K_BIN), error=True)
-        loghandler('giving up and exiting ... bye ...', error=True)
+        loghandler('%s could not be found or is not executable' % (G10K_BIN), G10K_LOG, error=True)
+        loghandler('giving up and exiting ... bye ...', G10K_LOG, error=True)
         os.sys.exit(1)
     elif not os.access(CACHEDIR, os.W_OK):
         print 'could not write to %s' % (CACHEDIR)
-        loghandler('could not write to %s' % (CACHEDIR), error=True)
-        loghandler('giving up and exiting ... bye ...', error=True)
+        loghandler('could not write to %s' % (CACHEDIR), G10K_LOG, error=True)
+        loghandler('giving up and exiting ... bye ...', G10K_LOG, error=True)
         os.sys.exit(1)
     elif hex(os.stat(BASE_DIR)[2]) != hex(os.stat(CACHEDIR)[2]):
         print '%s and %s not in the same partion. Could not create hardlinks' % (BASE_DIR, CACHEDIR)
         loghandler('%s and %s not in the same partion. Could not create hardlinks' % (
-            BASE_DIR, CACHEDIR), error=True)
-        loghandler('giving up and exiting ... bye ...', error=True)
-        os.sys.exit(1)
-    elif not os.access(G10K_LOG, os.W_OK):
-        print 'could not write to %s' % (G10K_LOG)
+            BASE_DIR, CACHEDIR), G10K_LOG, error=True)
+        loghandler('giving up and exiting ... bye ...', G10K_LOG, error=True)
         os.sys.exit(1)
 
     # Everything looks fine. Here we go:
