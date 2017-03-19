@@ -4,10 +4,8 @@
       - python git (deb: python-git | rpm: GitPython)
       - python-flask
       - python-jinja2
-      - /etc/puppetlabs/g10k.conf
+      - /etc/puppetlabs/g10k.conf: https://github.com/maxadamo/g10k-webhook/blob/master/etc/puppetlabs/g10k.conf
       - /opt/puppetlabs/puppet/bin/g10k: https://github.com/xorpaul/g10k/
-      - cache dir owned by puppet (set inside g10k.conf).
-        g10k uses hardlinks and the cache must be in the same partition)
       - puppet server 4.x (it runs under /etc/puppetlabs/code/)
 """
 import os
