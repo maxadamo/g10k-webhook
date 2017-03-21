@@ -138,7 +138,7 @@ class G10k(object):
         """ run g10k """
         os.chdir(self.env_dir)
         loghandler("running g10k for environment %s" % (self.puppetenv), self.g10k_log)
-        g10k_cmd = 'g10k_cachedir=%s /opt/puppetlabs/puppet/bin/g10k %s' % (
+        g10k_cmd = '/opt/puppetlabs/puppet/bin/g10k -cachedir %s %s' % (
             self.config.get('g10k', 'g10k_cachedir'), self.cmd_opts)
         g10k_proc = sp.Popen(g10k_cmd, shell=True,
                              stdout=sp.PIPE, stderr=sp.STDOUT)
