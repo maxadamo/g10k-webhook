@@ -51,12 +51,12 @@ def parse_request(reponame, gitenv):
         for env_item in branches_list:
             G10k(env_item, reponame).git()
             G10k(env_item, reponame).render()
-            if reponame != 'environments':
-                if cleanup or force:
-                    loghandler("purging modules directory", g10k_log)
-                    G10k(env_item, reponame, cleanup=True).g10k()
-                else:
-                    G10k(env_item, reponame).g10k()
+            if cleanup or force:
+                loghandler("purging modules directory", g10k_log)
+                G10k(env_item, reponame, cleanup=True).g10k()
+            else:
+                G10k(env_item, reponame).g10k()
+
             yield "%s branch updated\n" % (env_item)
 
     if gitenv not in branch_list:
