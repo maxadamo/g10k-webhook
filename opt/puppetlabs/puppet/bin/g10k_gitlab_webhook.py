@@ -83,16 +83,18 @@ class G10k(object):
         self.config = ConfigParser.RawConfigParser()
         self.config.readfp(open('/etc/puppetlabs/g10k.conf'))
         self.g10k_log = self.config.get('g10k', 'g10k_log')
+        self.maxworker = CONFIG.get('g10k', 'maxworker')
         self.puppetfile_vars = ast.literal_eval(self.config.get('g10k', 'puppetfile_vars'))
         self.reponame = reponame
-        self.cmd_opts = '-puppetfile -verbose'
-        # self.cmd_opts = '-puppetfile -verbose -maxworker %s' % (maxworker)
+        # self.cmd_opts = '-puppetfile -verbose'
+        self.cmd_opts = '-puppetfile -verbose -maxworker %s' % (self.maxworker)
         if cleanup:
             self.cmd_opts += ' -force'
 
     def git(self):
         """ git: stash, checkout, pull """
-        loghandler("==== Start update of puppet env: %s" % (self.puppetenv), self.g10k_log)
+        loghandler("==== Start update of puppet env: %s" % (self.puppetenv),
+                   self.g10k_log)
         git_cmd = git.cmd.Git(self.env_dir)
         local_branch = str(git_cmd.rev_parse('--abbrev-ref', 'HEAD'))
 
@@ -103,13 +105,15 @@ class G10k(object):
                 self.env_dir, str(err)), self.g10k_log, error=True)
         else:
             git_cmd.stash('clear')
-            loghandler("stashing changes on %s: %s" % (self.env_dir, git_stdout), self.g10k_log)
+            loghandler("stashing changes on %s: %s" % (self.env_dir, git_stdout),
+                       self.g10k_log)
 
         if local_branch != self.puppetenv:
             try:
                 git_cmd.checkout(self.puppetenv)
             except Exception as err:
-                loghandler("Failed to checkout branch: %s" % (str(err)), self.g10k_log, error=True)
+                loghandler("Failed to checkout branch: %s" % (str(err)),
+                           self.g10k_log, error=True)
             else:
                 loghandler("switched to branch: %s" % (self.puppetenv), self.g10k_log)
 
@@ -119,7 +123,8 @@ class G10k(object):
             except Exception as err:
                 loghandler("Failed to pull: %s" % (str(err)), self.g10k_log, error=True)
             else:
-                loghandler("pulling remote %s: %s" % (self.puppetenv, git_stdout), self.g10k_log)
+                loghandler("pulling remote %s: %s" % (self.puppetenv, git_stdout),
+                           self.g10k_log)
 
     def render(self):
         """ convert jinja template to Puppetfile """
@@ -138,7 +143,7 @@ class G10k(object):
         """ run g10k """
         os.chdir(self.env_dir)
         loghandler("running g10k for environment %s" % (self.puppetenv), self.g10k_log)
-        g10k_cmd = '/opt/puppetlabs/puppet/bin/g10k -cachedir %s %s' % (
+        g10k_cmd = 'g10k_cachedir=%s /opt/puppetlabs/puppet/bin/g10k %s' % (
             self.config.get('g10k', 'g10k_cachedir'), self.cmd_opts)
         g10k_proc = sp.Popen(g10k_cmd, shell=True,
                              stdout=sp.PIPE, stderr=sp.STDOUT)
