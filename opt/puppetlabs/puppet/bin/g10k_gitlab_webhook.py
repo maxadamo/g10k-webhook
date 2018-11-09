@@ -12,6 +12,7 @@ import os
 import ast
 import getpass
 import logging
+import shutil
 import ConfigParser
 import subprocess as sp
 from datetime import datetime
@@ -57,6 +58,8 @@ def parse_request(reponame, gitenv):
             else:
                 G10k(env_item, reponame).g10k()
 
+            isolate_env(env_item, g10k_log)
+
             yield "%s branch updated\n" % (env_item)
 
     if gitenv not in branch_list:
@@ -71,6 +74,22 @@ def parse_request(reponame, gitenv):
         time_spent = (datetime.now() - start_time).seconds
         loghandler("======== Trigger processed in %s seconds ========" % (time_spent), g10k_log)
         return result
+
+
+def isolate_env(puppet_env, log_file):
+    """ runs environment isolation """
+    loghandler("generating pcore to isolate environment %s" % (puppet_env), log_file)
+    shutil.rmtree('/etc/puppetlabs/code/environments/%s/.resource_types' % (puppet_env))
+    isolate_cmd = '/opt/puppetlabs/puppet/bin/puppet generate types --environment %s' % (puppet_env)
+    isolate_proc = sp.Popen(isolate_cmd, shell=True,
+                            stdout=sp.PIPE, stderr=sp.STDOUT)
+    isolate_proc_out = isolate_proc.communicate()[0]
+    isolate_retcode = isolate_proc.returncode
+    if isolate_retcode is not 0:
+        loghandler(isolate_proc_out, log_file, error=True)
+    else:
+        loghandler(isolate_proc_out.split('\n')[-2], log_file)
+    loghandler("==== End update of puppet env: %s" % (puppet_env), log_file)
 
 
 class G10k(object):
@@ -153,7 +172,6 @@ class G10k(object):
             loghandler(g10k_proc_out, self.g10k_log, error=True)
         else:
             loghandler(g10k_proc_out.split('\n')[-2], self.g10k_log)
-        loghandler("==== End update of puppet env: %s" % (self.puppetenv), self.g10k_log)
 
 
 if __name__ == '__main__':
