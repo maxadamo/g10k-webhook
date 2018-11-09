@@ -90,8 +90,6 @@ def isolate_env(puppet_env, log_file):
     isolate_retcode = isolate_proc.returncode
     if isolate_retcode is not 0:
         loghandler(isolate_proc_out, log_file, error=True)
-    else:
-        loghandler(isolate_proc_out.split('\n')[-2], log_file)
     loghandler("==== End update of puppet env: %s" % (puppet_env), log_file)
 
 
