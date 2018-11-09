@@ -13,6 +13,7 @@ import ast
 import getpass
 import logging
 import shutil
+import platform
 import ConfigParser
 import subprocess as sp
 from datetime import datetime
@@ -79,8 +80,10 @@ def parse_request(reponame, gitenv):
 def isolate_env(puppet_env, log_file):
     """ runs environment isolation """
     loghandler("generating pcore to isolate environment %s" % (puppet_env), log_file)
-    shutil.rmtree('/etc/puppetlabs/code/environments/%s/.resource_types' % (puppet_env))
-    isolate_cmd = '/opt/puppetlabs/puppet/bin/puppet generate types --environment %s' % (puppet_env)
+    res_dir = '/etc/puppetlabs/code/environments/%s/.resource_types' % (puppet_env)
+    if os.path.isdir(res_dir):
+        shutil.rmtree(res_dir)
+    isolate_cmd = '/opt/puppetlabs/puppet/bin/puppet generate types --environment %s --confdir /etc/puppetlabs/puppet --codedir /etc/puppetlabs/code --vardir /opt/puppetlabs/puppet/cache' % (puppet_env)
     isolate_proc = sp.Popen(isolate_cmd, shell=True,
                             stdout=sp.PIPE, stderr=sp.STDOUT)
     isolate_proc_out = isolate_proc.communicate()[0]
@@ -106,7 +109,11 @@ class G10k(object):
         self.puppetfile_vars = ast.literal_eval(self.config.get('g10k', 'puppetfile_vars'))
         self.reponame = reponame
         # self.cmd_opts = '-puppetfile -verbose'
-        self.cmd_opts = '-puppetfile -verbose -maxworker %s' % (self.maxworker)
+        # try to detect old CentOS
+        if platform.dist()[1].split('.')[0] == '6':
+            self.cmd_opts = '-puppetfile -verbose -maxworker %s' % (self.maxworker)
+        else:
+            self.cmd_opts = '-gitobjectsyntaxnotsupported -puppetfile -verbose -maxworker %s' % (self.maxworker)
         if cleanup:
             self.cmd_opts += ' -force'
 
